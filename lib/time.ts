@@ -60,6 +60,29 @@ export function nextRun(now = new Date()) {
   return { slot: "morning" as const, at: new Date(morning.getTime() + 24 * 60 * 60 * 1000) };
 }
 
+export function shanghaiDateKey(iso: string) {
+  return shanghaiParts(new Date(iso)).date;
+}
+
+export function dayHeading(dateKey: string, now = new Date()) {
+  const today = shanghaiParts(now).date;
+  const yesterday = shanghaiParts(new Date(shanghaiLocalToDate(shanghaiParts(now).year, shanghaiParts(now).month, shanghaiParts(now).day, 0, 0).getTime() - 24 * 60 * 60 * 1000)).date;
+  const label = new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  }).format(new Date(`${dateKey}T12:00:00+08:00`));
+  if (dateKey === today) return `今天 · ${label}`;
+  if (dateKey === yesterday) return `昨天 · ${label}`;
+  return label;
+}
+
+export function clockTime(iso: string) {
+  const parts = shanghaiParts(new Date(iso));
+  return `${String(parts.hour).padStart(2, "0")}:${String(parts.minute).padStart(2, "0")}`;
+}
+
 export function formatShanghai(iso: string, withDate = true) {
   return new Intl.DateTimeFormat("zh-CN", {
     timeZone: "Asia/Shanghai",

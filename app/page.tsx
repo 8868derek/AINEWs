@@ -1,35 +1,35 @@
-import Link from "next/link";
-import { DigestView } from "@/components/DigestView";
-import { digestNews, entriesForNews, latestDigest, latestDigestWithItems } from "@/lib/queries";
+import { NewsFeed } from "@/components/NewsFeed";
+import { WaitingRefresh } from "@/components/WaitingRefresh";
+import { FEED_CATEGORIES, entriesForNews, latestDigest, listHotTopics, listStoredNews, storedNewsCount } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const latest = latestDigest();
-  if (!latest) {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
+  const params = await searchParams;
+  const category = FEED_CATEGORIES.some((item) => item.id === params.category) ? params.category || "" : "";
+  const total = storedNewsCount();
+  if (total === 0) {
     return (
       <section className="py-8">
-        <p className="text-sm text-cinnabar">还没有简报</p>
-        <h1 className="mt-3 font-serif text-4xl leading-tight">今天的 AI 精选，会在这里配上中文词条。</h1>
-        <p className="mt-4 max-w-xl leading-7 text-stone-700">
-          点右上角「立即更新」，先拉取 AIHOT 精选。像 Gary Marcus、Jensen Huang 这样的名字，会尽量对照维基百科写成给中文读者看的说明。
-        </p>
+        <p className="text-sm text-cinnabar">资料库还是空的</p>
+        <h1 className="mt-3 font-serif text-4xl leading-tight">精选会先写入本地，再按日期和主题打开。</h1>
+        <WaitingRefresh />
       </section>
     );
   }
-  const previous = latest.item_count === 0 ? latestDigestWithItems() : undefined;
-  const previousIsDifferent = previous && previous.id !== latest.id;
-  const items = digestNews(latest.id);
+  const items = listStoredNews(category);
+  const latest = latestDigest();
+  const daily =
+    latest && latest.slot === "morning"
+      ? { status: latest.daily_status, date: latest.daily_date, lead: latest.daily_lead, url: latest.daily_url }
+      : null;
   return (
-    <div className="space-y-8">
-      <DigestView digest={latest} items={items} entries={entriesForNews(items.map((item) => item.id))} />
-      {previousIsDifferent ? (
-        <p className="text-sm">
-          <Link href={`/digests/${previous.id}`} className="text-cinnabar">
-            查看上一期有内容的简报
-          </Link>
-        </p>
-      ) : null}
-    </div>
+    <NewsFeed
+      category={category}
+      topics={listHotTopics()}
+      items={items}
+      entries={entriesForNews(items.map((item) => item.id))}
+      daily={daily}
+    />
   );
 }

@@ -11,7 +11,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   "ai-products": "产品",
   industry: "行业",
   paper: "论文",
-  tip: "技巧",
+  tip: "教程",
 };
 
 export function categoryLabel(category: string | null) {
@@ -58,6 +58,45 @@ export function latestDigest() {
 
 export function latestDigestWithItems() {
   return rows<DigestRow>("SELECT * FROM digests WHERE item_count > 0 ORDER BY id DESC LIMIT 1")[0];
+}
+
+export type HotTopicRow = {
+  rank: number;
+  item_id: string | null;
+  title: string;
+  source_name: string | null;
+  link_aihot: string | null;
+  link_original: string | null;
+  source_count: number | null;
+  fetched_at: string;
+};
+
+export const FEED_CATEGORIES = [
+  { id: "", label: "全部" },
+  { id: "ai-models", label: "模型" },
+  { id: "ai-products", label: "产品" },
+  { id: "industry", label: "行业" },
+  { id: "paper", label: "论文" },
+  { id: "tip", label: "教程" },
+];
+
+export function listStoredNews(category: string) {
+  return rows<NewsRow>(
+    `SELECT * FROM news_items
+     WHERE (? = '' OR category = ?)
+     ORDER BY discovered_at DESC
+     LIMIT 300`,
+    category,
+    category,
+  );
+}
+
+export function listHotTopics() {
+  return rows<HotTopicRow>("SELECT * FROM hot_topics ORDER BY rank ASC");
+}
+
+export function storedNewsCount() {
+  return rows<{ n: number }>("SELECT COUNT(*) AS n FROM news_items")[0]?.n ?? 0;
 }
 
 export function digestNews(digestId: number) {

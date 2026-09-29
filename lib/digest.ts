@@ -1,4 +1,4 @@
-import { contentHash, dailyLead, fetchLatestDaily, fetchSelectedItems, type AihotItem } from "@/lib/aihot";
+import { contentHash, dailyLead, fetchHotTopics, fetchLatestDaily, fetchSelectedItems, type AihotItem } from "@/lib/aihot";
 import { one, rows, run, stateSet, tryLock, unlock, withTransaction } from "@/lib/db";
 import { buildGlossary } from "@/lib/glossary";
 import { defaultCutoff, shanghaiParts, slotFor, type Slot } from "@/lib/time";
@@ -167,6 +167,31 @@ export async function runDigest(trigger: "schedule" | "manual") {
       }
       return inserted.lastInsertRowid;
     });
+
+    try {
+      const topics = await fetchHotTopics();
+      const fetchedAt = new Date().toISOString();
+      withTransaction(() => {
+        run("DELETE FROM hot_topics");
+        for (const topic of topics) {
+          if (!topic?.title || !topic.rank) continue;
+          run(
+            `INSERT INTO hot_topics (rank, item_id, title, source_name, link_aihot, link_original, source_count, fetched_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            topic.rank,
+            topic.id ?? null,
+            topic.title,
+            topic.source?.name ?? null,
+            topic.links?.aihot ?? null,
+            topic.links?.original ?? null,
+            topic.sourceCount ?? null,
+            fetchedAt,
+          );
+        }
+      });
+    } catch (error) {
+      console.error("[ainews] 热点榜更新失败", error);
+    }
 
     const pending = rows<NewsRow>("SELECT * FROM news_items WHERE glossary_done = 0 ORDER BY discovered_at DESC");
     let glossaryNote = selected.length === 0 ? "没有新条目，未生成词条。" : null;

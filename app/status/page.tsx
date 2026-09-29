@@ -13,11 +13,11 @@ export default function StatusPage() {
         <Row label="词条检索" value="维基百科官方接口，无需密钥。" />
         <Row label="上次成功" value={status.lastSuccessAt ? formatShanghai(status.lastSuccessAt) : "还没有"} />
         <Row label="下一次" value={`${slotLabel(status.nextSlot)} · ${formatShanghai(status.nextAt)}`} />
-        <Row label="简报 / 词条" value={`${status.digestCount} 期 · ${status.entryCount} 条`} />
+        <Row label="资料库" value={`${status.digestCount} 期更新 · ${status.entryCount} 条词条。新闻存在 SQLite 文件 data/app.sqlite，这是数据库，文件在磁盘上。`} />
         <Row label="最近错误" value={status.lastError || "没有"} />
       </dl>
       <p className="mt-8 leading-7 text-stone-600">
-        定时更新跟这个网页进程走。机器需要在北京时间 8:00 和 14:00 开着 <code>npm run dev</code> 或 <code>npm start</code>。
+        打开页面读的是已经写好的资料库，不用每次手动更新。8:00 和 14:00 会自动再拉一次。部署时把 <code>data</code> 目录挂到持久磁盘，重建容器后新闻还在。
       </p>
     </section>
   );

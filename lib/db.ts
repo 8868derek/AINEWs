@@ -8,13 +8,7 @@ function databasePath() {
   return process.env.DATABASE_PATH || path.join(process.cwd(), "data", "app.sqlite");
 }
 
-export function getDb() {
-  if (globalForDb.ainewsDb) return globalForDb.ainewsDb;
-  const file = databasePath();
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  const db = new DatabaseSync(file);
-  db.exec("PRAGMA journal_mode = WAL;");
-  db.exec("PRAGMA foreign_keys = ON;");
+function migrate(db: DatabaseSync) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS digests (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,11 +87,34 @@ export function getDb() {
       owner TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS hot_topics (
+      rank INTEGER PRIMARY KEY,
+      item_id TEXT,
+      title TEXT NOT NULL,
+      source_name TEXT,
+      link_aihot TEXT,
+      link_original TEXT,
+      source_count INTEGER,
+      fetched_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_news_glossary_entry ON news_glossary(entry_id);
     CREATE INDEX IF NOT EXISTS idx_digest_ran ON digests(ran_at);
+    CREATE INDEX IF NOT EXISTS idx_news_discovered ON news_items(discovered_at);
   `);
-  globalForDb.ainewsDb = db;
-  return db;
+}
+
+export function getDb() {
+  if (!globalForDb.ainewsDb) {
+    const file = databasePath();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const db = new DatabaseSync(file);
+    db.exec("PRAGMA journal_mode = WAL;");
+    db.exec("PRAGMA foreign_keys = ON;");
+    globalForDb.ainewsDb = db;
+  }
+  migrate(globalForDb.ainewsDb);
+  return globalForDb.ainewsDb;
 }
 
 function stmt(sql: string): StatementSync {

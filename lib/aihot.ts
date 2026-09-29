@@ -100,6 +100,21 @@ export async function fetchSelectedItems(cutoff: Date) {
   return items;
 }
 
+export type HotTopic = {
+  rank: number;
+  id: string;
+  title: string;
+  source?: { name?: string };
+  links?: { aihot?: string; original?: string };
+  sourceCount?: number;
+};
+
+export async function fetchHotTopics() {
+  const response = await aihotFetch(new URL("/api/v1/hot-topics", BASE).toString());
+  const data = (await response.json()) as { items?: HotTopic[] };
+  return data.items ?? [];
+}
+
 export async function fetchLatestDaily() {
   const response = await aihotFetch(new URL("/api/v1/dailies/latest", BASE).toString());
   const data = (await response.json()) as { report?: DailyReport };

@@ -1,5 +1,6 @@
 import { contentHash, dailyLead, fetchHotTopics, fetchLatestDaily, fetchSelectedItems, type AihotItem } from "@/lib/aihot";
 import { one, rows, run, stateSet, tryLock, unlock, withTransaction } from "@/lib/db";
+import { publishDigestDoc } from "@/lib/feishu";
 import { buildGlossary } from "@/lib/glossary";
 import { defaultCutoff, shanghaiParts, slotFor, type Slot } from "@/lib/time";
 
@@ -16,6 +17,8 @@ export type DigestRow = {
   daily_lead: string | null;
   daily_url: string | null;
   glossary_note: string | null;
+  feishu_url?: string | null;
+  feishu_note?: string | null;
 };
 
 export type NewsRow = {
@@ -210,6 +213,13 @@ export async function runDigest(trigger: "schedule" | "manual") {
       }
     }
     run("UPDATE digests SET glossary_note = ? WHERE id = ?", glossaryNote, digestId);
+    try {
+      const feishu = await publishDigestDoc(Number(digestId));
+      run("UPDATE digests SET feishu_url = ?, feishu_note = ? WHERE id = ?", feishu.url, feishu.note, digestId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "飞书文档失败";
+      run("UPDATE digests SET feishu_note = ? WHERE id = ?", `飞书文档失败：${message}`, digestId);
+    }
     stateSet("last_error", "");
     stateSet("last_success_at", ranAt);
     return { ok: true as const, digestId, itemCount: selected.length, glossaryNote };

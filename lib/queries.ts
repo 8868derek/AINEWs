@@ -175,5 +175,8 @@ export function runtimeStatus() {
     nextAt: upcoming.at.toISOString(),
     digestCount: rows<{ n: number }>("SELECT COUNT(*) AS n FROM digests")[0]?.n ?? 0,
     entryCount: rows<{ n: number }>("SELECT COUNT(*) AS n FROM glossary_entries")[0]?.n ?? 0,
+    feishuConfigured: Boolean(process.env.FEISHU_APP_ID?.trim() && process.env.FEISHU_APP_SECRET?.trim()),
+    feishuUrl: rows<{ feishu_url: string | null }>("SELECT feishu_url FROM digests WHERE feishu_url IS NOT NULL ORDER BY id DESC LIMIT 1")[0]?.feishu_url ?? null,
+    feishuNote: rows<{ feishu_note: string | null }>("SELECT feishu_note FROM digests WHERE feishu_note IS NOT NULL ORDER BY id DESC LIMIT 1")[0]?.feishu_note ?? null,
   };
 }

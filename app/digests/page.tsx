@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listDigests } from "@/lib/queries";
+import { listDigests, safeUrl } from "@/lib/queries";
 import { formatShanghai, slotLabel } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,15 @@ export default function DigestsPage() {
               <span className="text-sm text-cinnabar">{slotLabel(digest.slot)}</span>
               <span className="mt-1 block font-serif text-2xl text-ink">{formatShanghai(digest.ran_at)}</span>
             </Link>
-            <p className="mt-1 text-sm text-stone-600">{digest.item_count > 0 ? `${digest.item_count} 条精选` : digest.note}</p>
+            <p className="mt-1 text-sm text-stone-600">
+              {digest.item_count > 0 ? `${digest.item_count} 条精选` : digest.note}
+              {safeUrl(digest.feishu_url) ? (
+                <>
+                  {" · "}
+                  <a href={safeUrl(digest.feishu_url) ?? undefined}>飞书文档</a>
+                </>
+              ) : null}
+            </p>
           </li>
         ))}
       </ul>

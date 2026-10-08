@@ -21,6 +21,13 @@ export function DigestView({
         <p className="mt-3 text-sm text-stone-600">
           {digest.item_count > 0 ? `${digest.item_count} 条精选` : digest.note}
           {digest.glossary_note ? ` · ${digest.glossary_note}` : ""}
+          {safeUrl(digest.feishu_url) ? (
+            <>
+              {" · "}
+              <a href={safeUrl(digest.feishu_url) ?? undefined}>飞书文档</a>
+            </>
+          ) : null}
+          {digest.feishu_note ? ` · ${digest.feishu_note}` : ""}
         </p>
       </header>
       <DailyBanner digest={digest} />

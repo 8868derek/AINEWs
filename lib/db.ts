@@ -102,6 +102,15 @@ function migrate(db: DatabaseSync) {
     CREATE INDEX IF NOT EXISTS idx_digest_ran ON digests(ran_at);
     CREATE INDEX IF NOT EXISTS idx_news_discovered ON news_items(discovered_at);
   `);
+  ensureColumn(db, "digests", "feishu_url", "TEXT");
+  ensureColumn(db, "digests", "feishu_note", "TEXT");
+}
+
+function ensureColumn(db: DatabaseSync, table: string, column: string, definition: string) {
+  const info = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  if (!info.some((item) => item.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
 }
 
 export function getDb() {

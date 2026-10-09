@@ -234,29 +234,31 @@ name 用新闻里的原文写法。aliases 只写你有把握的中文译名或�
   return sanitizeEntities(raw, new Set(news.map((item) => item.id)));
 }
 
-async function writeSummary(entity: Entity, zh: WikiPage | null, en: WikiPage | null, news: NewsRef[]) {
-  const related = news.filter((item) => entity.newsIds.includes(item.id));
-  if (!llmConfig().configured) {
-    if (zh) {
-      return {
-        summary: clip(zh.extract, entity.familiarity === "common" ? 80 : 280, entity.familiarity === "common" ? 1 : 3),
-        status: "verified",
-        extraAliases: [] as string[],
-      };
-    }
-    if (en) {
-      return {
-        summary: `已匹配英文维基条目「${en.title}」。配置模型后会根据摘要生成中文说明。`,
-        status: "needs_model",
-        extraAliases: [] as string[],
-      };
-    }
+function summaryFromWiki(entity: Entity, zh: WikiPage | null, en: WikiPage | null) {
+  if (zh) {
     return {
-      summary: `本条新闻提到了${entity.name}，暂未在维基百科找到对应条目。`,
-      status: "unverified",
+      summary: clip(zh.extract, entity.familiarity === "common" ? 80 : 280, entity.familiarity === "common" ? 1 : 3),
+      status: "verified",
       extraAliases: [] as string[],
     };
   }
+  if (en) {
+    return {
+      summary: `已匹配英文维基条目「${en.title}」。`,
+      status: "needs_model",
+      extraAliases: [] as string[],
+    };
+  }
+  return {
+    summary: `本条新闻提到了${entity.name}，暂未在维基百科找到对应条目。`,
+    status: "unverified",
+    extraAliases: [] as string[],
+  };
+}
+
+async function writeSummary(entity: Entity, zh: WikiPage | null, en: WikiPage | null, news: NewsRef[]) {
+  const related = news.filter((item) => entity.newsIds.includes(item.id));
+  if (!llmConfig().configured) return summaryFromWiki(entity, zh, en);
 
   if (!zh && !en) {
     const raw = (await chatJson(
@@ -363,19 +365,59 @@ function saveEntry(entity: Entity, summary: string, status: string, page: WikiPa
   return one<GlossaryEntry>("SELECT * FROM glossary_entries WHERE id = ?", inserted.lastInsertRowid)!;
 }
 
+async function collectEntities(news: NewsRef[]) {
+  if (!llmConfig().configured) return { entities: heuristicEntities(news), modelMissed: false };
+  const merged = new Map<string, Entity>();
+  let modelMissed = false;
+  const add = (entity: Entity) => {
+    const key = norm(entity.name);
+    const prev = merged.get(key);
+    if (!prev) {
+      merged.set(key, { ...entity, newsIds: [...entity.newsIds], aliases: [...entity.aliases] });
+      return;
+    }
+    prev.newsIds = [...new Set([...prev.newsIds, ...entity.newsIds])];
+    prev.aliases = [...new Set([...prev.aliases, ...entity.aliases])];
+  };
+  for (let index = 0; index < news.length; index += 6) {
+    const slice = news.slice(index, index + 6);
+    try {
+      for (const entity of await extractEntities(slice)) add(entity);
+    } catch {
+      modelMissed = true;
+      for (const entity of heuristicEntities(slice)) add(entity);
+    }
+  }
+  return { entities: [...merged.values()], modelMissed };
+}
+
 export async function buildGlossary(news: NewsRef[]) {
   if (news.length === 0) return "没有新条目，未生成词条。";
-  const entities = await extractEntities(news);
+  const collected = await collectEntities(news);
+  let modelMissed = collected.modelMissed;
+  const entities = collected.entities;
   if (entities.length === 0) {
     for (const item of news) run("UPDATE news_items SET glossary_done = 1 WHERE id = ?", item.id);
     return llmConfig().configured ? "这批新闻没有需要补充的词条。" : "模型未配置，标题里也没有可匹配的外文专名。";
   }
-  const noteFor = await contextNotes(entities, news);
+  const noteFor = modelMissed
+    ? (name: string) => `本条新闻提到了${name}。`
+    : await contextNotes(entities, news);
   let created = 0;
   for (const entity of entities) {
-    const wiki = await lookupWiki(entity.name, entity.aliases);
+    const wiki = await lookupWiki(entity.name, entity.aliases).catch(() => ({ zh: null, en: null }));
     const page = wiki.zh ?? wiki.en;
-    const written = await writeSummary(entity, wiki.zh, wiki.en, news);
+    let written: { summary: string; status: string; extraAliases: string[] };
+    if (modelMissed) {
+      written = summaryFromWiki(entity, wiki.zh, wiki.en);
+    } else {
+      try {
+        written = await writeSummary(entity, wiki.zh, wiki.en, news);
+      } catch {
+        modelMissed = true;
+        written = summaryFromWiki(entity, wiki.zh, wiki.en);
+      }
+    }
     entity.kind = refineKind(entity.kind, page, written.summary);
     const entry = saveEntry(entity, written.summary, written.status, page, written.extraAliases);
     if (entry) created += 1;
@@ -390,6 +432,7 @@ export async function buildGlossary(news: NewsRef[]) {
     }
   }
   for (const item of news) run("UPDATE news_items SET glossary_done = 1 WHERE id = ?", item.id);
+  if (modelMissed) return `补充了 ${created} 个词条。模型这次没有及时返回，已改用维基百科摘要。`;
   const mode = llmConfig().configured ? "已用模型写成中文" : "模型未配置，中文维基摘要已直接收录";
   return `补充了 ${created} 个词条（${mode}）。`;
 }

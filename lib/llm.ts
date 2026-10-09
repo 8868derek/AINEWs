@@ -28,10 +28,16 @@ export function parseModelJson(text: string): unknown {
   return JSON.parse(raw.slice(start, end + 1));
 }
 
+function chatEndpoint(baseUrl: string) {
+  const trimmed = baseUrl.replace(/\/$/, "");
+  if (trimmed.endsWith("/chat/completions")) return trimmed;
+  return `${trimmed}/chat/completions`;
+}
+
 export async function chatJson(system: string, user: string) {
   const { configured, baseUrl, apiKey, model } = llmConfig();
   if (!configured) throw new Error("模型未配置");
-  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
+  const response = await fetch(chatEndpoint(baseUrl), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,

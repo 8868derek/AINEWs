@@ -39,17 +39,21 @@ function matchScore(query: string, title: string, extract: string) {
 }
 
 async function wikiGet(url: string) {
-  const response = await fetch(url, {
-    headers: {
-      "User-Agent": WIKI_UA,
-      "Api-User-Agent": WIKI_UA,
-      Accept: "application/json",
-    },
-    cache: "no-store",
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!response.ok) return null;
-  return response;
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": WIKI_UA,
+        "Api-User-Agent": WIKI_UA,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) return null;
+    return response;
+  } catch {
+    return null;
+  }
 }
 
 async function searchWiki(lang: "zh" | "en", query: string): Promise<SearchHit[]> {

@@ -1,4 +1,4 @@
-import { rows, stateGet } from "@/lib/db";
+import { one, rows, stateGet } from "@/lib/db";
 import type { DigestRow, NewsRow } from "@/lib/digest";
 import type { GlossaryEntry } from "@/lib/glossary";
 import { llmConfig } from "@/lib/llm";
@@ -6,18 +6,9 @@ import { nextRun } from "@/lib/time";
 
 export type EntryLink = GlossaryEntry & { context_note: string; news_id: string };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  "ai-models": "模型",
-  "ai-products": "产品",
-  industry: "行业",
-  paper: "论文",
-  tip: "教程",
-};
+import { FEED_CATEGORIES, categoryLabel } from "@/lib/categories";
 
-export function categoryLabel(category: string | null) {
-  if (!category) return "动态";
-  return CATEGORY_LABELS[category] ?? category;
-}
+export { FEED_CATEGORIES, categoryLabel };
 
 export function kindLabel(kind: string) {
   if (kind === "person") return "人物";
@@ -71,23 +62,16 @@ export type HotTopicRow = {
   fetched_at: string;
 };
 
-export const FEED_CATEGORIES = [
-  { id: "", label: "全部" },
-  { id: "ai-models", label: "模型" },
-  { id: "ai-products", label: "产品" },
-  { id: "industry", label: "行业" },
-  { id: "paper", label: "论文" },
-  { id: "tip", label: "教程" },
-];
-
-export function listStoredNews(category: string) {
+export function listStoredNews(category: string, selectedOnly = false) {
   return rows<NewsRow>(
     `SELECT * FROM news_items
      WHERE (? = '' OR category = ?)
+       AND (? = 0 OR selected = 1)
      ORDER BY discovered_at DESC
      LIMIT 300`,
     category,
     category,
+    selectedOnly ? 1 : 0,
   );
 }
 
@@ -97,6 +81,13 @@ export function listHotTopics() {
 
 export function storedNewsCount() {
   return rows<{ n: number }>("SELECT COUNT(*) AS n FROM news_items")[0]?.n ?? 0;
+}
+
+export function latestCorpusDoc(kind: string) {
+  return one<{ title: string | null; payload: string; fetched_at: string }>(
+    "SELECT title, payload, fetched_at FROM corpus_docs WHERE kind = ? ORDER BY fetched_at DESC LIMIT 1",
+    kind,
+  );
 }
 
 export function digestNews(digestId: number) {

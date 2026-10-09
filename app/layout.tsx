@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
+import { SiteSidebar } from "@/components/SiteHeader";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,9 +13,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-CN">
       <body className="min-h-screen font-sans antialiased">
-        <SiteHeader />
-        <main className="mx-auto max-w-3xl px-5 py-8">{children}</main>
-        <SiteFooter />
+        <div className="flex min-h-screen">
+          <SiteSidebar />
+          <main className="min-w-0 flex-1 px-6 py-8 md:px-10">
+            <div className="mx-auto max-w-3xl">{children}</div>
+          </main>
+        </div>
       </body>
     </html>
   );

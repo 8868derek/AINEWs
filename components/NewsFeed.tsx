@@ -1,34 +1,28 @@
 import Link from "next/link";
 import type { NewsRow } from "@/lib/digest";
-import type { EntryLink, HotTopicRow } from "@/lib/queries";
-import { categoryLabel, FEED_CATEGORIES, kindLabel, safeUrl, statusLabel } from "@/lib/queries";
+import type { EntryLink } from "@/lib/queries";
+import { categoryLabel, kindLabel, safeUrl, statusLabel } from "@/lib/queries";
 import { clockTime, dayHeading, shanghaiDateKey } from "@/lib/time";
 
 export function NewsFeed({
-  category,
-  topics,
+  title,
+  note,
   items,
   entries,
-  daily,
 }: {
-  category: string;
-  topics: HotTopicRow[];
+  title: string;
+  note: string;
   items: NewsRow[];
   entries: Map<string, EntryLink[]>;
-  daily: { status: string | null; date: string | null; lead: string | null; url: string | null } | null;
 }) {
   const groups = groupByDay(items);
   return (
     <div className="space-y-10">
       <header>
-        <p className="text-sm text-cinnabar">已保存的材料</p>
-        <h1 className="mt-2 font-serif text-4xl">公开动态</h1>
-        <p className="mt-3 text-sm text-stone-600">AIHOT 近 7 天的公开条目、热点、周报、月报和 Codex 记录都在本地。简报页只留下和制造业赋能有关的部分。</p>
+        <h1 className="font-serif text-4xl">{title}</h1>
+        <p className="mt-3 text-sm text-stone-600">{note}</p>
       </header>
-      <CategoryBar category={category} />
-      {daily ? <DailyBanner daily={daily} /> : null}
-      {topics.length > 0 && category === "" ? <HotList topics={topics} /> : null}
-      {groups.length === 0 ? <p className="py-8 text-stone-600">这个分类下还没有保存的新闻。</p> : null}
+      {groups.length === 0 ? <p className="py-8 text-stone-600">这里还没有条目。更新一次后会按这个分类出现。</p> : null}
       {groups.map((group) => (
         <section key={group.date}>
           <h2 className="border-b border-rule pb-2 font-serif text-2xl">{group.label}</h2>
@@ -41,85 +35,6 @@ export function NewsFeed({
         </section>
       ))}
     </div>
-  );
-}
-
-function CategoryBar({ category }: { category: string }) {
-  return (
-    <nav className="flex flex-wrap gap-2 text-sm">
-      {FEED_CATEGORIES.map((item) => {
-        const active = item.id === category;
-        const href = item.id ? `/library?category=${item.id}` : "/library";
-        return (
-          <Link
-            key={item.id || "all"}
-            href={href}
-            className={`rounded-full px-3 py-1 no-underline ${active ? "bg-ink text-white" : "bg-white text-stone-700"}`}
-          >
-            {item.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
-function HotList({ topics }: { topics: HotTopicRow[] }) {
-  return (
-    <section>
-      <h2 className="font-serif text-2xl">当前热点</h2>
-      <ol className="mt-4 divide-y divide-rule rounded-2xl bg-white/70">
-        {topics.map((topic) => {
-          const href = safeUrl(topic.link_original) || safeUrl(topic.link_aihot);
-          return (
-            <li key={topic.rank} className="flex gap-3 px-4 py-3">
-              <span className="w-6 font-serif text-lg text-cinnabar">{topic.rank}</span>
-              <div>
-                {href ? (
-                  <a href={href} className="font-medium text-ink no-underline hover:text-cinnabar">
-                    {topic.title}
-                  </a>
-                ) : (
-                  <p className="font-medium">{topic.title}</p>
-                )}
-                <p className="mt-1 text-xs text-stone-500">
-                  {topic.source_name || "多源"}
-                  {topic.source_count ? ` · ${topic.source_count} 家信源` : ""}
-                </p>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
-  );
-}
-
-function DailyBanner({
-  daily,
-}: {
-  daily: { status: string | null; date: string | null; lead: string | null; url: string | null };
-}) {
-  if (daily.status === "not_yet") {
-    return (
-      <section className="rounded-2xl border border-rule bg-white/60 p-4">
-        <h2 className="font-medium">日报尚未发布</h2>
-        <p className="mt-1 text-sm text-stone-600">AIHOT 日报在北京时间 08:00 更新。{daily.date ? `目前最新一期是 ${daily.date}。` : ""}</p>
-      </section>
-    );
-  }
-  if (daily.status !== "published") return null;
-  const href = safeUrl(daily.url);
-  return (
-    <section className="rounded-2xl border border-rule bg-white/70 p-4">
-      <h2 className="font-medium">今日日报</h2>
-      {daily.lead ? <p className="mt-2 leading-7 text-stone-700">{daily.lead}</p> : null}
-      {href ? (
-        <a href={href} className="mt-3 inline-block text-sm text-cinnabar">
-          在 AIHOT 阅读 {daily.date}
-        </a>
-      ) : null}
-    </section>
   );
 }
 

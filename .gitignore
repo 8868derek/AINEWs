@@ -9,3 +9,6 @@ data
 *.sqlite-shm
 tsconfig.tsbuildinfo
 .DS_Store
+ios/**/xcuserdata/
+ios/**/DerivedData/
+ios/build/

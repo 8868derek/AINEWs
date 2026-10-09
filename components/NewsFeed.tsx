@@ -21,9 +21,9 @@ export function NewsFeed({
   return (
     <div className="space-y-10">
       <header>
-        <p className="text-sm text-cinnabar">已保存的精选</p>
-        <h1 className="mt-2 font-serif text-4xl">今天的 AI 新闻</h1>
-        <p className="mt-3 text-sm text-stone-600">按北京时间归档。8:00 和 14:00 自动写入，打开就能看。</p>
+        <p className="text-sm text-cinnabar">已保存的材料</p>
+        <h1 className="mt-2 font-serif text-4xl">公开动态</h1>
+        <p className="mt-3 text-sm text-stone-600">AIHOT 近 7 天的公开条目、热点、周报、月报和 Codex 记录都在本地。简报页只留下和制造业赋能有关的部分。</p>
       </header>
       <CategoryBar category={category} />
       {daily ? <DailyBanner daily={daily} /> : null}
@@ -49,7 +49,7 @@ function CategoryBar({ category }: { category: string }) {
     <nav className="flex flex-wrap gap-2 text-sm">
       {FEED_CATEGORIES.map((item) => {
         const active = item.id === category;
-        const href = item.id ? `/?category=${item.id}` : "/";
+        const href = item.id ? `/library?category=${item.id}` : "/library";
         return (
           <Link
             key={item.id || "all"}
@@ -70,7 +70,7 @@ function HotList({ topics }: { topics: HotTopicRow[] }) {
       <h2 className="font-serif text-2xl">当前热点</h2>
       <ol className="mt-4 divide-y divide-rule rounded-2xl bg-white/70">
         {topics.map((topic) => {
-          const href = safeUrl(topic.link_aihot) || safeUrl(topic.link_original);
+          const href = safeUrl(topic.link_original) || safeUrl(topic.link_aihot);
           return (
             <li key={topic.rank} className="flex gap-3 px-4 py-3">
               <span className="w-6 font-serif text-lg text-cinnabar">{topic.rank}</span>
@@ -124,7 +124,6 @@ function DailyBanner({
 }
 
 function FeedItem({ item, entries }: { item: NewsRow; entries: EntryLink[] }) {
-  const aihot = safeUrl(item.link_aihot);
   const original = safeUrl(item.link_original);
   return (
     <article className="grid grid-cols-[3.5rem_1fr] gap-3 py-6 sm:grid-cols-[4.5rem_1fr]">
@@ -135,8 +134,8 @@ function FeedItem({ item, entries }: { item: NewsRow; entries: EntryLink[] }) {
           <span>{item.source_name}</span>
         </div>
         <h3 className="mt-2 font-serif text-2xl leading-snug">
-          {aihot ? (
-            <a href={aihot} className="text-ink no-underline hover:text-cinnabar">
+          {original ? (
+            <a href={original} className="text-ink no-underline hover:text-cinnabar">
               {item.title}
             </a>
           ) : (
@@ -146,11 +145,6 @@ function FeedItem({ item, entries }: { item: NewsRow; entries: EntryLink[] }) {
         {item.summary ? <p className="mt-3 leading-7 text-stone-700">{item.summary}</p> : null}
         {item.reason ? <p className="mt-3 text-sm leading-6 text-moss">推荐理由：{item.reason}</p> : null}
         <div className="mt-3 flex gap-4 text-sm">
-          {aihot ? (
-            <a href={aihot} className="text-cinnabar">
-              站内阅读
-            </a>
-          ) : null}
           {original ? (
             <a href={original} className="text-cinnabar">
               原文

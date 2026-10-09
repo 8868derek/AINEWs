@@ -81,13 +81,12 @@ async function aihotFetch(url: string) {
   throw new Error(lastError);
 }
 
-export async function fetchSelectedItems(cutoff: Date) {
-  const window = Date.now() - cutoff.getTime() > 24 * 60 * 60 * 1000 ? "7d" : "24h";
+export async function fetchItems(mode: "selected" | "all", window: "24h" | "7d") {
   const items: AihotItem[] = [];
   let cursor: string | null = null;
   for (let page = 0; page < 8; page += 1) {
     const url = new URL("/api/v1/items", BASE);
-    url.searchParams.set("mode", "selected");
+    url.searchParams.set("mode", mode);
     url.searchParams.set("window", window);
     url.searchParams.set("limit", "100");
     if (cursor) url.searchParams.set("cursor", cursor);
@@ -100,14 +99,47 @@ export async function fetchSelectedItems(cutoff: Date) {
   return items;
 }
 
+export async function fetchSelectedItems(cutoff: Date) {
+  const window = Date.now() - cutoff.getTime() > 24 * 60 * 60 * 1000 ? "7d" : "24h";
+  return fetchItems("selected", window);
+}
+
 export type HotTopic = {
   rank: number;
   id: string;
   title: string;
   source?: { name?: string };
-  links?: { aihot?: string; original?: string };
+  links?: { aihot?: string; original?: string; story?: string };
   sourceCount?: number;
+  latestAt?: string;
 };
+
+export function storyPublicId(url?: string | null) {
+  return url?.match(/\/story\/([0-9a-z-]{8,})/i)?.[1] ?? null;
+}
+
+export async function fetchStory(publicId: string) {
+  const response = await aihotFetch(new URL(`/api/v1/stories/${encodeURIComponent(publicId)}`, BASE).toString());
+  const data = (await response.json()) as { story?: Record<string, unknown> };
+  return data.story ?? null;
+}
+
+export async function fetchLatestWeekly() {
+  const response = await aihotFetch(new URL("/api/v1/weeklies/latest", BASE).toString());
+  const data = (await response.json()) as { report?: Record<string, unknown> };
+  return data.report ?? null;
+}
+
+export async function fetchLatestMonthly() {
+  const response = await aihotFetch(new URL("/api/v1/monthlies/latest", BASE).toString());
+  const data = (await response.json()) as { report?: Record<string, unknown> };
+  return data.report ?? null;
+}
+
+export async function fetchCodexRecent() {
+  const response = await aihotFetch(new URL("/api/v1/codex-resets/recent", BASE).toString());
+  return (await response.json()) as Record<string, unknown>;
+}
 
 export async function fetchHotTopics() {
   const response = await aihotFetch(new URL("/api/v1/hot-topics", BASE).toString());

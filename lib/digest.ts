@@ -1,4 +1,6 @@
 import { contentHash, dailyLead, fetchHotTopics, fetchLatestDaily, fetchSelectedItems, type AihotItem } from "@/lib/aihot";
+import { writeTeamBrief } from "@/lib/brief";
+import { syncCorpus } from "@/lib/corpus";
 import { one, rows, run, stateSet, tryLock, unlock, withTransaction } from "@/lib/db";
 import { publishDigestDoc } from "@/lib/feishu";
 import { buildGlossary } from "@/lib/glossary";
@@ -19,6 +21,7 @@ export type DigestRow = {
   glossary_note: string | null;
   feishu_url?: string | null;
   feishu_note?: string | null;
+  brief_json?: string | null;
 };
 
 export type NewsRow = {
@@ -213,6 +216,18 @@ export async function runDigest(trigger: "schedule" | "manual") {
       }
     }
     run("UPDATE digests SET glossary_note = ? WHERE id = ?", glossaryNote, digestId);
+    try {
+      const materials = await syncCorpus(cutoff);
+      const brief = await writeTeamBrief(materials);
+      run("UPDATE digests SET brief_json = ? WHERE id = ?", JSON.stringify(brief), digestId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "简报没有写成";
+      run(
+        "UPDATE digests SET brief_json = ? WHERE id = ?",
+        JSON.stringify({ lead: `简报没有写成：${message}`, sections: [] }),
+        digestId,
+      );
+    }
     try {
       const feishu = await publishDigestDoc(Number(digestId));
       run("UPDATE digests SET feishu_url = ?, feishu_note = ? WHERE id = ?", feishu.url, feishu.note, digestId);

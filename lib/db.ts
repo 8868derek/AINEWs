@@ -104,6 +104,18 @@ function migrate(db: DatabaseSync) {
   `);
   ensureColumn(db, "digests", "feishu_url", "TEXT");
   ensureColumn(db, "digests", "feishu_note", "TEXT");
+  ensureColumn(db, "digests", "brief_json", "TEXT");
+  ensureColumn(db, "news_items", "selected", "INTEGER NOT NULL DEFAULT 0");
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS corpus_docs (
+      kind TEXT NOT NULL,
+      doc_key TEXT NOT NULL,
+      title TEXT,
+      payload TEXT NOT NULL,
+      fetched_at TEXT NOT NULL,
+      PRIMARY KEY (kind, doc_key)
+    );
+  `);
 }
 
 function ensureColumn(db: DatabaseSync, table: string, column: string, definition: string) {

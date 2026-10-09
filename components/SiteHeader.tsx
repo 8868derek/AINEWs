@@ -3,6 +3,7 @@ import { RunButton } from "@/components/RunButton";
 
 const links = [
   { href: "/", label: "简报" },
+  { href: "/library", label: "素材" },
   { href: "/digests", label: "往期" },
   { href: "/glossary", label: "词条" },
   { href: "/status", label: "状态" },

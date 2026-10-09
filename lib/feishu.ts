@@ -1,4 +1,5 @@
-import { categoryLabel, digestNews, entriesForNews, getDigest, kindLabel } from "@/lib/queries";
+import { parseBrief } from "@/lib/brief";
+import { getDigest } from "@/lib/queries";
 import { formatShanghai, slotLabel } from "@/lib/time";
 
 type FeishuJson = {
@@ -41,29 +42,20 @@ export function feishuConfigured() {
 export async function publishDigestDoc(digestId: number): Promise<{ url: string | null; note: string | null }> {
   if (!feishuConfigured()) return { url: null, note: null };
   const digest = getDigest(digestId);
-  const items = digestNews(digestId);
-  const entries = entriesForNews(items.map((item) => item.id));
+  const brief = parseBrief(digest?.brief_json);
   const title = `团队 AI 简报 · ${slotLabel(digest?.slot ?? "morning")} · ${formatShanghai(digest?.ran_at ?? new Date().toISOString())}`;
   const blocks: Block[] = [heading(3, title)];
-  blocks.push(paragraph(items.length > 0 ? `本期 ${items.length} 条精选。` : "本期无新精选。"));
-  if (digest?.daily_lead) blocks.push(paragraph(`日报：${digest.daily_lead}`));
-  for (const item of items) {
-    blocks.push(heading(5, item.title));
-    const meta = [categoryLabel(item.category), item.source_name].filter(Boolean).join(" · ");
-    if (meta) blocks.push(paragraph(meta));
-    if (item.summary) blocks.push(paragraph(item.summary));
-    if (item.reason) blocks.push(paragraph(`推荐理由：${item.reason}`));
-    const links = [
-      linkRun("站内阅读", item.link_aihot),
-      linkRun("原文", item.link_original),
-    ].filter((run): run is TextRun => Boolean(run));
-    if (links.length > 0) blocks.push({ block_type: 2, text: { elements: joinRuns(links), style: {} } });
-    for (const entry of entries.get(item.id) ?? []) {
-      const bits = [`${kindLabel(entry.kind)} · ${entry.name}`, entry.summary_zh, entry.context_note].filter(Boolean);
-      blocks.push(paragraph(bits.join("。")));
+  blocks.push(paragraph(brief?.lead || "这期没有写成简报。"));
+  for (const section of brief?.sections ?? []) {
+    blocks.push(heading(4, section.heading));
+    for (const item of section.items) {
+      blocks.push(heading(5, item.title));
+      blocks.push(paragraph(item.point));
+      const link = linkRun(item.source || "原文", item.url);
+      if (link) blocks.push({ block_type: 2, text: { elements: [link], style: {} } });
     }
   }
-  blocks.push(paragraph("标题、摘要和推荐理由来自 AIHOT。补充词条来自维基百科，供团队内部阅读。"));
+  blocks.push(paragraph("材料来自 AIHOT 公开接口，简报按制造业 AI 赋能的侧重点改写。链接是原文。"));
 
   const documentId = await createDocument(title);
   await writeBlocks(documentId, blocks);
@@ -93,15 +85,6 @@ function linkRun(label: string, url: string | null | undefined): TextRun | null 
       text_element_style: { link: { url: encodeURIComponent(url) } },
     },
   };
-}
-
-function joinRuns(runs: TextRun[]) {
-  const joined: TextRun[] = [];
-  runs.forEach((run, index) => {
-    if (index > 0) joined.push(textRun("  "));
-    joined.push(run);
-  });
-  return joined;
 }
 
 function clip(value: string) {

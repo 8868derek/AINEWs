@@ -34,7 +34,7 @@ function chatEndpoint(baseUrl: string) {
   return `${trimmed}/chat/completions`;
 }
 
-export async function chatJson(system: string, user: string) {
+export async function chatJson(system: string, user: string, timeoutMs = 60000) {
   const { configured, baseUrl, apiKey, model } = llmConfig();
   if (!configured) throw new Error("模型未配置");
   const response = await fetch(chatEndpoint(baseUrl), {
@@ -51,7 +51,7 @@ export async function chatJson(system: string, user: string) {
         { role: "user", content: user },
       ],
     }),
-    signal: AbortSignal.timeout(60000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) {
     const body = await response.text();

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { TeamBriefView } from "@/components/TeamBrief";
+import { parseBrief } from "@/lib/brief";
 import type { DigestRow, NewsRow } from "@/lib/digest";
 import type { EntryLink } from "@/lib/queries";
 import { categoryLabel, kindLabel, safeUrl, statusLabel } from "@/lib/queries";
@@ -30,6 +32,11 @@ export function DigestView({
           {digest.feishu_note ? ` · ${digest.feishu_note}` : ""}
         </p>
       </header>
+      {parseBrief(digest.brief_json) ? (
+        <div className="border-b border-rule py-8">
+          <TeamBriefView brief={parseBrief(digest.brief_json)!} />
+        </div>
+      ) : null}
       <DailyBanner digest={digest} />
       {items.length === 0 ? (
         <p className="py-10 text-lg text-stone-600">这一期没有新的精选。上一期可以在往期里查看。</p>

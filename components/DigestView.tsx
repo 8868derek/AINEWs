@@ -21,7 +21,7 @@ export function DigestView({
         <p className="text-sm text-cinnabar">{slotLabel(digest.slot)}</p>
         <h1 className="mt-2 font-serif text-4xl">{formatShanghai(digest.ran_at)}</h1>
         <p className="mt-3 text-sm text-stone-600">
-          {digest.item_count > 0 ? `${digest.item_count} 条精选` : digest.note}
+          {digest.item_count > 0 ? `${digest.item_count} 条` : digest.note || "这期没有条目"}
           {digest.glossary_note ? ` · ${digest.glossary_note}` : ""}
           {safeUrl(digest.feishu_url) ? (
             <>
@@ -38,9 +38,7 @@ export function DigestView({
         </div>
       ) : null}
       <DailyBanner digest={digest} />
-      {items.length === 0 ? (
-        <p className="py-10 text-lg text-stone-600">这一期没有新的精选。上一期可以在往期里查看。</p>
-      ) : (
+      {items.length === 0 ? null : (
         <div className="divide-y divide-rule">
           {items.map((item) => (
             <NewsCard key={item.id} item={item} entries={entries.get(item.id) ?? []} />

@@ -18,15 +18,101 @@ export type SourceMaterial = {
   source: string;
   url: string;
   category: string;
+  at?: string;
+  selected?: boolean;
 };
 
-const FOCUS = `读者是一家给制造业做 AI 赋能的公司。只保留和下面有关的材料：
-基础模型的能力、价格、接口和可部署性，以及这些变化会怎样影响工厂和行业软件；
-做行业落地、工业软件、AI 赋能的公司；
-人机协作、多智能体和团队协作工具；
-AI for Science，以及材料、工艺、研发相关的科学模型；
-制造、供应链、质检、机器人、数字孪生和工业数据。
-不要写纯消费八卦、与落地无关的社交动态，也不要写额度重置。`;
+const GROUPS: Array<{ heading: string; weight: number; pattern: RegExp }> = [
+  {
+    heading: "制造与供应链",
+    weight: 5,
+    pattern: /制造|工厂|工业|产线|质检|供应链|机器人|机械臂|数字孪生|半导体|晶圆|物流|仓储|机床|传感器|工艺|工控|汽车|新能源/,
+  },
+  {
+    heading: "AI for Science",
+    weight: 4,
+    pattern: /科学|科研|论文|分子|蛋白|药物|化学|物理|生物|实验|仿真|材料/,
+  },
+  {
+    heading: "基础模型",
+    weight: 3,
+    pattern: /模型|gpt|claude|gemini|llama|qwen|deepseek|mistral|开源|权重|推理|微调|部署|上下文|多模态|api|token|价格|基准|benchmark/i,
+  },
+  {
+    heading: "协作",
+    weight: 3,
+    pattern: /智能体|多智能体|\bagents?\b|协作|工作流|workflow|copilot/i,
+  },
+  {
+    heading: "行业赋能",
+    weight: 3,
+    pattern: /企业|落地|赋能|数字化|行业软件|b2b|saas/i,
+  },
+];
+
+const CATEGORY_SCORE: Record<string, number> = {
+  industry: 3,
+  paper: 3,
+  "ai-models": 2,
+  "ai-products": 2,
+  热点: 2,
+  报告: 1,
+};
+
+const CATEGORY_HEADING: Record<string, string> = {
+  industry: "行业赋能",
+  paper: "AI for Science",
+  "ai-models": "基础模型",
+  "ai-products": "行业赋能",
+  热点: "行业赋能",
+  报告: "行业赋能",
+};
+
+const SECTION_ORDER = ["制造与供应链", "基础模型", "行业赋能", "协作", "AI for Science"];
+
+const SKIP = /额度重置|codex\s*reset|重置监控/i;
+
+type Scored = SourceMaterial & { score: number; heading: string };
+
+export function mergeMaterials(...groups: SourceMaterial[][]) {
+  const seen = new Set<string>();
+  const list: SourceMaterial[] = [];
+  for (const group of groups) {
+    for (const item of group) {
+      if (!item.url || seen.has(item.url) || SKIP.test(`${item.title} ${item.summary}`)) continue;
+      seen.add(item.url);
+      list.push(item);
+    }
+  }
+  return list;
+}
+
+function scoreMaterial(item: SourceMaterial): Scored {
+  const hay = `${item.title} ${item.summary}`.toLowerCase();
+  let bestHeading = CATEGORY_HEADING[item.category] || "行业赋能";
+  let bestWeight = 0;
+  let score = CATEGORY_SCORE[item.category] ?? 0;
+  for (const group of GROUPS) {
+    if (!group.pattern.test(hay)) continue;
+    score += group.weight;
+    if (group.weight > bestWeight) {
+      bestWeight = group.weight;
+      bestHeading = group.heading;
+    }
+  }
+  if (item.selected) score += 1;
+  return { ...item, score, heading: bestHeading };
+}
+
+export function pickForBrief(materials: SourceMaterial[]) {
+  const ranked = materials
+    .map(scoreMaterial)
+    .filter((item) => item.score >= 2)
+    .sort((a, b) => b.score - a.score || String(b.at || "").localeCompare(String(a.at || "")));
+  const strong = ranked.filter((item) => item.score >= 4).slice(0, 12);
+  if (strong.length >= 6) return strong;
+  return ranked.slice(0, 8);
+}
 
 export function parseBrief(raw: string | null | undefined): TeamBrief | null {
   if (!raw) return null;
@@ -39,44 +125,64 @@ export function parseBrief(raw: string | null | undefined): TeamBrief | null {
   }
 }
 
+function assemble(picks: Scored[], lead: string): TeamBrief {
+  const grouped = new Map<string, BriefItem[]>();
+  for (const item of picks) {
+    const list = grouped.get(item.heading) ?? [];
+    list.push({
+      title: item.title,
+      point: item.summary || "原文没有摘要。",
+      source: item.source,
+      url: item.url,
+    });
+    grouped.set(item.heading, list);
+  }
+  const sections = SECTION_ORDER.filter((heading) => grouped.has(heading)).map((heading) => ({
+    heading,
+    items: grouped.get(heading) ?? [],
+  }));
+  return { lead, sections };
+}
+
 export async function writeTeamBrief(materials: SourceMaterial[]): Promise<TeamBrief> {
   const usable = materials.filter((item) => item.url && !/aihot\.news|aihot\.virxact\.com/i.test(item.url));
-  if (!llmConfig().configured) {
-    return { lead: "模型未配置，本期没有写成团队简报。", sections: [] };
+  const picks = pickForBrief(usable);
+  if (picks.length === 0) {
+    return { lead: "近 24 小时的材料里没有对上团队侧重点。", sections: [] };
   }
-  if (usable.length === 0) {
-    return { lead: "这期没有新的公开材料，所以没有简报。", sections: [] };
-  }
-  const allowed = new Map(usable.map((item) => [item.url, item]));
-  const raw = (await chatJson(
-    `你在写这份团队的内部简报。${FOCUS}
-只使用给出的材料，不要补充材料里没有的数字、公司或结论。每条必须使用材料里的 url，禁止使用 aihot 链接。
-point 用一两句说明它和制造业 AI 赋能有什么关系。没有相关材料时，lead 直接说明，sections 为空数组。
-只返回 JSON：{"lead":"","sections":[{"heading":"基础模型|行业落地|协作|AI for Science|制造与供应链","items":[{"title":"","point":"","source":"","url":""}]}]}`,
-    JSON.stringify(usable.slice(0, 80)),
-    120000,
-  )) as { lead?: string; sections?: Array<{ heading?: string; items?: Array<Record<string, unknown>> }> };
+  const listed = assemble(picks, `按相关度从近 24 小时挑出 ${picks.length} 条，优先制造、基础模型、协作和 AI for Science。`);
+  if (!llmConfig().configured) return listed;
 
-  const sections: TeamBrief["sections"] = [];
-  for (const section of raw.sections ?? []) {
-    const items: BriefItem[] = [];
-    for (const item of section.items ?? []) {
-      const url = typeof item.url === "string" ? item.url : "";
-      const sourceMaterial = allowed.get(url);
-      if (!sourceMaterial) continue;
-      const title = typeof item.title === "string" && item.title.trim() ? item.title.trim() : sourceMaterial.title;
-      const point = typeof item.point === "string" ? item.point.trim() : "";
-      if (!point) continue;
-      items.push({
-        title: title.slice(0, 180),
-        point: point.slice(0, 400),
-        source: sourceMaterial.source,
-        url,
-      });
+  try {
+    const raw = (await chatJson(
+      `读者是一家给制造业做 AI 赋能的公司。材料已经选定，不要增删，不要换 url。
+lead 用两句说明这期最该知道的变化。
+point 一句：先写材料里的事实，再写和制造落地、基础模型、协作或科研有没有关系。没有直接关系就只写事实，不要编「对工厂很重要」。
+只返回 JSON：{"lead":"","points":[{"url":"","point":""}]}`,
+      JSON.stringify(
+        picks.map((item) => ({
+          heading: item.heading,
+          title: item.title,
+          summary: item.summary.slice(0, 160),
+          url: item.url,
+        })),
+      ),
+      40000,
+    )) as { lead?: string; points?: Array<{ url?: string; point?: string }> };
+
+    const points = new Map<string, string>();
+    for (const point of raw.points ?? []) {
+      if (point.url && point.point?.trim()) points.set(point.url, point.point.trim().slice(0, 400));
     }
-    if (!section.heading || items.length === 0) continue;
-    sections.push({ heading: section.heading.slice(0, 40), items });
+    const brief = assemble(picks, raw.lead?.trim() || listed.lead);
+    for (const section of brief.sections) {
+      for (const item of section.items) {
+        const point = points.get(item.url);
+        if (point) item.point = point;
+      }
+    }
+    return brief;
+  } catch {
+    return listed;
   }
-  const lead = raw.lead?.trim() || (sections.length === 0 ? "这期材料里没有和制造业 AI 赋能直接相关的新内容。" : "按团队侧重点整理了这期材料。");
-  return { lead, sections };
 }

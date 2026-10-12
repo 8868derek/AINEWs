@@ -21,7 +21,7 @@ export default async function HomePage() {
     return (
       <section className="py-8">
         <h1 className="font-serif text-4xl">这期还没有团队简报</h1>
-        <p className="mt-3 leading-7 text-stone-600">点「立即更新」，模型会从已经拉下来的材料里按侧重点重写一版。链接用原文。</p>
+        <p className="mt-3 leading-7 text-stone-600">点「立即更新」，会从近 24 小时的材料里按团队侧重点挑一版。链接用原文。</p>
       </section>
     );
   }

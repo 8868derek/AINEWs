@@ -1,6 +1,6 @@
 import { contentHash, dailyLead, fetchHotTopics, fetchLatestDaily, fetchSelectedItems, type AihotItem } from "@/lib/aihot";
-import { writeTeamBrief } from "@/lib/brief";
-import { syncCorpus } from "@/lib/corpus";
+import { mergeMaterials, writeTeamBrief } from "@/lib/brief";
+import { recentMaterials, syncCorpus } from "@/lib/corpus";
 import { one, rows, run, stateSet, tryLock, unlock, withTransaction } from "@/lib/db";
 import { publishDigestDoc } from "@/lib/feishu";
 import { buildGlossary } from "@/lib/glossary";
@@ -155,8 +155,8 @@ export async function runDigest(trigger: "schedule" | "manual") {
         trigger,
         ranAt,
         cutoff.toISOString(),
-        selected.length,
-        selected.length === 0 ? "本期无新精选" : null,
+        0,
+        null,
         daily.daily_status,
         daily.daily_date,
         daily.daily_lead,
@@ -199,8 +199,30 @@ export async function runDigest(trigger: "schedule" | "manual") {
       console.error("[ainews] 热点榜更新失败", error);
     }
 
-    const pending = rows<NewsRow>("SELECT * FROM news_items WHERE glossary_done = 0 ORDER BY discovered_at DESC");
-    let glossaryNote = selected.length === 0 ? "没有新条目，未生成词条。" : null;
+    let itemCount = 0;
+    try {
+      const synced = await syncCorpus(cutoff);
+      const brief = await writeTeamBrief(mergeMaterials(recentMaterials(), synced));
+      itemCount = brief.sections.reduce((count, section) => count + section.items.length, 0);
+      run(
+        "UPDATE digests SET brief_json = ?, item_count = ?, note = ? WHERE id = ?",
+        JSON.stringify(brief),
+        itemCount,
+        itemCount === 0 ? "近 24 小时没有对上团队侧重点的材料" : null,
+        digestId,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "简报没有写成";
+      run(
+        "UPDATE digests SET brief_json = ?, note = ? WHERE id = ?",
+        JSON.stringify({ lead: `简报没有写成：${message}`, sections: [] }),
+        "简报没有写成",
+        digestId,
+      );
+    }
+
+    const pending = rows<NewsRow>("SELECT * FROM news_items WHERE glossary_done = 0 ORDER BY discovered_at DESC LIMIT 8");
+    let glossaryNote = pending.length === 0 ? "没有待补充的词条。" : null;
     if (pending.length > 0) {
       try {
         glossaryNote = await buildGlossary(
@@ -217,18 +239,6 @@ export async function runDigest(trigger: "schedule" | "manual") {
     }
     run("UPDATE digests SET glossary_note = ? WHERE id = ?", glossaryNote, digestId);
     try {
-      const materials = await syncCorpus(cutoff);
-      const brief = await writeTeamBrief(materials);
-      run("UPDATE digests SET brief_json = ? WHERE id = ?", JSON.stringify(brief), digestId);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "简报没有写成";
-      run(
-        "UPDATE digests SET brief_json = ? WHERE id = ?",
-        JSON.stringify({ lead: `简报没有写成：${message}`, sections: [] }),
-        digestId,
-      );
-    }
-    try {
       const feishu = await publishDigestDoc(Number(digestId));
       run("UPDATE digests SET feishu_url = ?, feishu_note = ? WHERE id = ?", feishu.url, feishu.note, digestId);
     } catch (error) {
@@ -237,7 +247,7 @@ export async function runDigest(trigger: "schedule" | "manual") {
     }
     stateSet("last_error", "");
     stateSet("last_success_at", ranAt);
-    return { ok: true as const, digestId, itemCount: selected.length, glossaryNote };
+    return { ok: true as const, digestId, itemCount, glossaryNote };
   } catch (error) {
     const message = error instanceof Error ? error.message : "更新失败";
     stateSet("last_error", message);

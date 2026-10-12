@@ -18,7 +18,7 @@ export default function DigestsPage() {
               <span className="mt-1 block font-serif text-2xl text-ink">{formatShanghai(digest.ran_at)}</span>
             </Link>
             <p className="mt-1 text-sm text-stone-600">
-              {digest.item_count > 0 ? `${digest.item_count} 条精选` : digest.note}
+              {digest.item_count > 0 ? `${digest.item_count} 条` : digest.note || "这期没有条目"}
               {safeUrl(digest.feishu_url) ? (
                 <>
                   {" · "}

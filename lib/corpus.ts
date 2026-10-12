@@ -10,7 +10,7 @@ import {
   storyPublicId,
   type AihotItem,
 } from "@/lib/aihot";
-import { one, run } from "@/lib/db";
+import { one, rows, run } from "@/lib/db";
 import type { SourceMaterial } from "@/lib/brief";
 
 function saveDoc(kind: string, docKey: string, title: string, payload: unknown) {
@@ -189,4 +189,40 @@ export async function syncCorpus(cutoff: Date) {
   }
 
   return materials.slice(0, 80);
+}
+
+export function recentMaterials(withinMs = 24 * 60 * 60 * 1000) {
+  const since = new Date(Date.now() - withinMs).toISOString();
+  const news = rows<{
+    title: string;
+    summary: string | null;
+    source_name: string;
+    link_original: string;
+    category: string | null;
+    discovered_at: string;
+    selected: number;
+  }>(
+    `SELECT title, summary, source_name, link_original, category, discovered_at, selected
+     FROM news_items
+     WHERE discovered_at >= ?
+     ORDER BY discovered_at DESC
+     LIMIT 250`,
+    since,
+  );
+  const list: SourceMaterial[] = [];
+  const seen = new Set<string>();
+  for (const item of news) {
+    const stamped = material(item.title, item.summary, item.source_name, item.link_original, item.category || "动态");
+    if (!stamped) continue;
+    addMaterial(list, seen, { ...stamped, at: item.discovered_at, selected: item.selected === 1 });
+  }
+  const topics = rows<{ title: string; source_name: string | null; link_original: string | null; fetched_at: string }>(
+    "SELECT title, source_name, link_original, fetched_at FROM hot_topics ORDER BY rank ASC",
+  );
+  for (const topic of topics) {
+    const stamped = material(topic.title, "", topic.source_name || "", topic.link_original, "热点");
+    if (!stamped) continue;
+    addMaterial(list, seen, { ...stamped, at: topic.fetched_at });
+  }
+  return list;
 }

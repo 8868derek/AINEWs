@@ -37,7 +37,7 @@ export function RunButton({ compact = false }: { compact?: boolean }) {
       >
         {pending ? "正在更新…" : "立即更新"}
       </button>
-      {pending ? <p className="mt-2 text-sm text-stone-600">正在拉取精选，并对照维基百科补词条。</p> : null}
+      {pending ? <p className="mt-2 text-sm text-stone-600">正在从近 24 小时的材料里按团队侧重点挑简报。</p> : null}
       {error ? <p className="mt-2 text-sm text-cinnabar">{error}</p> : null}
     </div>
   );

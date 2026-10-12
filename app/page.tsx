@@ -12,7 +12,7 @@ export default async function HomePage() {
     return (
       <section className="py-8">
         <p className="text-sm text-cinnabar">还没有简报</p>
-        <h1 className="mt-3 font-serif text-4xl leading-tight">更新完成后，这里会按制造业 AI 赋能的侧重点写成简报。</h1>
+        <h1 className="mt-3 font-serif text-4xl leading-tight">更新完成后，这里会按制造与供应链、基础模型和行业热门写成简报。</h1>
         <WaitingRefresh />
       </section>
     );

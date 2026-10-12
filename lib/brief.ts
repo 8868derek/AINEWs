@@ -20,6 +20,7 @@ export type SourceMaterial = {
   category: string;
   at?: string;
   selected?: boolean;
+  hotRank?: number;
 };
 
 const GROUPS: Array<{ heading: string; weight: number; pattern: RegExp }> = [
@@ -60,31 +61,36 @@ const CATEGORY_SCORE: Record<string, number> = {
 };
 
 const CATEGORY_HEADING: Record<string, string> = {
-  industry: "行业赋能",
-  paper: "AI for Science",
+  industry: "行业热门",
+  paper: "基础模型",
   "ai-models": "基础模型",
-  "ai-products": "行业赋能",
-  热点: "行业赋能",
-  报告: "行业赋能",
+  "ai-products": "行业热门",
+  热点: "行业热门",
+  报告: "行业热门",
 };
 
-const SECTION_ORDER = ["制造与供应链", "基础模型", "行业赋能", "协作", "AI for Science"];
+const SECTION_ORDER = ["制造与供应链", "基础模型", "行业热门"];
 
 const SKIP = /额度重置|codex\s*reset|重置监控/i;
 
 type Scored = SourceMaterial & { score: number; heading: string };
 
 export function mergeMaterials(...groups: SourceMaterial[][]) {
-  const seen = new Set<string>();
-  const list: SourceMaterial[] = [];
+  const byUrl = new Map<string, SourceMaterial>();
   for (const group of groups) {
     for (const item of group) {
-      if (!item.url || seen.has(item.url) || SKIP.test(`${item.title} ${item.summary}`)) continue;
-      seen.add(item.url);
-      list.push(item);
+      if (!item.url || SKIP.test(`${item.title} ${item.summary}`)) continue;
+      const prev = byUrl.get(item.url);
+      if (!prev) {
+        byUrl.set(item.url, { ...item });
+        continue;
+      }
+      if (!prev.summary && item.summary) prev.summary = item.summary;
+      if (item.selected) prev.selected = true;
+      if (item.hotRank && (!prev.hotRank || item.hotRank < prev.hotRank)) prev.hotRank = item.hotRank;
     }
   }
-  return list;
+  return [...byUrl.values()];
 }
 
 function scoreMaterial(item: SourceMaterial): Scored {
@@ -104,14 +110,46 @@ function scoreMaterial(item: SourceMaterial): Scored {
   return { ...item, score, heading: bestHeading };
 }
 
+function byScore(a: Scored, b: Scored) {
+  return b.score - a.score || String(b.at || "").localeCompare(String(a.at || ""));
+}
+
 export function pickForBrief(materials: SourceMaterial[]) {
-  const ranked = materials
-    .map(scoreMaterial)
-    .filter((item) => item.score >= 2)
-    .sort((a, b) => b.score - a.score || String(b.at || "").localeCompare(String(a.at || "")));
-  const strong = ranked.filter((item) => item.score >= 4).slice(0, 12);
-  if (strong.length >= 6) return strong;
-  return ranked.slice(0, 8);
+  const scored = materials.map(scoreMaterial);
+  const used = new Set<string>();
+  const take = (items: Scored[], heading: string, limit: number) => {
+    const picked: Scored[] = [];
+    for (const item of items) {
+      if (picked.length >= limit || used.has(item.url)) continue;
+      used.add(item.url);
+      picked.push({ ...item, heading });
+    }
+    return picked;
+  };
+  const manufacturingPattern = GROUPS.find((group) => group.heading === "制造与供应链")?.pattern;
+  const modelPattern = GROUPS.find((group) => group.heading === "基础模型")?.pattern;
+  const manufacturing = scored
+    .filter((item) => (manufacturingPattern ? manufacturingPattern.test(`${item.title} ${item.summary}`) : false))
+    .sort(byScore);
+  const models = scored
+    .filter((item) => item.category === "ai-models" || (modelPattern ? modelPattern.test(`${item.title} ${item.summary}`) : false))
+    .sort(byScore);
+  const hot = scored
+    .filter((item) => item.hotRank)
+    .sort((a, b) => (a.hotRank ?? 99) - (b.hotRank ?? 99));
+  const hotFilled = [...hot];
+  if (hotFilled.length < 3) {
+    hotFilled.push(
+      ...scored
+        .filter((item) => item.category === "industry" || item.category === "热点")
+        .sort(byScore),
+    );
+  }
+  return [
+    ...take(manufacturing, "制造与供应链", 4),
+    ...take(models, "基础模型", 4),
+    ...take(hotFilled, "行业热门", 5),
+  ];
 }
 
 export function parseBrief(raw: string | null | undefined): TeamBrief | null {
@@ -148,16 +186,16 @@ export async function writeTeamBrief(materials: SourceMaterial[]): Promise<TeamB
   const usable = materials.filter((item) => item.url && !/aihot\.news|aihot\.virxact\.com/i.test(item.url));
   const picks = pickForBrief(usable);
   if (picks.length === 0) {
-    return { lead: "近 24 小时的材料里没有对上团队侧重点。", sections: [] };
+    return { lead: "近 24 小时没有制造、基础模型或行业热门材料。", sections: [] };
   }
-  const listed = assemble(picks, `按相关度从近 24 小时挑出 ${picks.length} 条，优先制造、基础模型、协作和 AI for Science。`);
+  const listed = assemble(picks, `这期分三块，共 ${picks.length} 条：制造与供应链、基础模型，以及行业热门前列。`);
   if (!llmConfig().configured) return listed;
 
   try {
     const raw = (await chatJson(
       `读者是一家给制造业做 AI 赋能的公司。材料已经选定，不要增删，不要换 url。
-lead 用两句说明这期最该知道的变化。
-point 一句：先写材料里的事实，再写和制造落地、基础模型、协作或科研有没有关系。没有直接关系就只写事实，不要编「对工厂很重要」。
+三块分别是制造与供应链、基础模型、行业热门。lead 用两句说明这期最该知道的变化。
+point 一句，先写材料里的事实。制造和模型条目可以补一句和落地的关系；行业热门只说明它为什么被关注。不要编材料里没有的结论。
 只返回 JSON：{"lead":"","points":[{"url":"","point":""}]}`,
       JSON.stringify(
         picks.map((item) => ({

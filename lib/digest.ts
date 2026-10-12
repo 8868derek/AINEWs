@@ -208,7 +208,7 @@ export async function runDigest(trigger: "schedule" | "manual") {
         "UPDATE digests SET brief_json = ?, item_count = ?, note = ? WHERE id = ?",
         JSON.stringify(brief),
         itemCount,
-        itemCount === 0 ? "近 24 小时没有对上团队侧重点的材料" : null,
+        itemCount === 0 ? "近 24 小时没有制造、基础模型或行业热门材料" : null,
         digestId,
       );
     } catch (error) {

@@ -55,7 +55,7 @@ export async function publishDigestDoc(digestId: number): Promise<{ url: string 
       if (link) blocks.push({ block_type: 2, text: { elements: [link], style: {} } });
     }
   }
-  blocks.push(paragraph("材料来自 AIHOT 公开接口，从近 24 小时里按制造业 AI 赋能的侧重点挑出。链接是原文。"));
+  blocks.push(paragraph("材料来自 AIHOT 公开接口。简报分制造与供应链、基础模型和行业热门。链接是原文。"));
 
   const documentId = await createDocument(title);
   await writeBlocks(documentId, blocks);

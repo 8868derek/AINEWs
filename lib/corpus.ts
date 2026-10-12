@@ -169,7 +169,8 @@ export async function syncCorpus(cutoff: Date) {
   try {
     const topics = await fetchHotTopics();
     for (const topic of topics) {
-      addMaterial(materials, seen, material(topic.title, "", topic.source?.name || "", topic.links?.original, "热点"));
+      const topicMaterial = material(topic.title, "", topic.source?.name || "", topic.links?.original, "热点");
+      addMaterial(materials, seen, topicMaterial ? { ...topicMaterial, hotRank: topic.rank } : null);
       const publicId = storyPublicId(topic.links?.story);
       if (!publicId) continue;
       try {
@@ -216,13 +217,18 @@ export function recentMaterials(withinMs = 24 * 60 * 60 * 1000) {
     if (!stamped) continue;
     addMaterial(list, seen, { ...stamped, at: item.discovered_at, selected: item.selected === 1 });
   }
-  const topics = rows<{ title: string; source_name: string | null; link_original: string | null; fetched_at: string }>(
-    "SELECT title, source_name, link_original, fetched_at FROM hot_topics ORDER BY rank ASC",
+  const topics = rows<{ rank: number; title: string; source_name: string | null; link_original: string | null; fetched_at: string }>(
+    "SELECT rank, title, source_name, link_original, fetched_at FROM hot_topics ORDER BY rank ASC",
   );
   for (const topic of topics) {
     const stamped = material(topic.title, "", topic.source_name || "", topic.link_original, "热点");
     if (!stamped) continue;
-    addMaterial(list, seen, { ...stamped, at: topic.fetched_at });
+    const existing = list.find((item) => item.url === stamped.url);
+    if (existing) {
+      if (!existing.hotRank || topic.rank < existing.hotRank) existing.hotRank = topic.rank;
+      continue;
+    }
+    addMaterial(list, seen, { ...stamped, at: topic.fetched_at, hotRank: topic.rank });
   }
   return list;
 }

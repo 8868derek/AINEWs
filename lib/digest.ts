@@ -2,7 +2,7 @@ import { contentHash, dailyLead, fetchHotTopics, fetchLatestDaily, fetchSelected
 import { mergeMaterials, writeTeamBrief } from "@/lib/brief";
 import { recentMaterials, syncCorpus } from "@/lib/corpus";
 import { one, rows, run, stateSet, tryLock, unlock, withTransaction } from "@/lib/db";
-import { publishDigestDoc } from "@/lib/feishu";
+import { grantTenantEdit, publishDigestDoc } from "@/lib/feishu";
 import { buildGlossary } from "@/lib/glossary";
 import { defaultCutoff, shanghaiParts, slotFor, type Slot } from "@/lib/time";
 
@@ -241,6 +241,8 @@ export async function runDigest(trigger: "schedule" | "manual") {
     try {
       const feishu = await publishDigestDoc(Number(digestId));
       run("UPDATE digests SET feishu_url = ?, feishu_note = ? WHERE id = ?", feishu.url, feishu.note, digestId);
+      const existing = rows<{ feishu_url: string | null }>("SELECT feishu_url FROM digests WHERE feishu_url IS NOT NULL");
+      await grantTenantEdit(existing.map((item) => item.feishu_url));
     } catch (error) {
       const message = error instanceof Error ? error.message : "飞书文档失败";
       run("UPDATE digests SET feishu_note = ? WHERE id = ?", `飞书文档失败：${message}`, digestId);

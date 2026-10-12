@@ -64,6 +64,21 @@ export async function publishDigestDoc(digestId: number): Promise<{ url: string 
   return { url, note: shared };
 }
 
+export async function grantTenantEdit(urls: Array<string | null | undefined>) {
+  const ids = [...new Set(urls.map(documentIdFromUrl).filter((id): id is string => Boolean(id)))];
+  for (const id of ids) {
+    try {
+      await shareWithTenant(id);
+    } catch (error) {
+      console.error("[ainews] 飞书文档编辑权限更新失败", id, error);
+    }
+  }
+}
+
+function documentIdFromUrl(url: string | null | undefined) {
+  return url?.match(/\/docx\/([A-Za-z0-9]+)/)?.[1] ?? null;
+}
+
 function heading(blockType: 3 | 4 | 5, content: string): Block {
   const key = HEADING[blockType];
   return { block_type: blockType, [key]: { elements: [textRun(content)], style: {} } };
@@ -123,13 +138,13 @@ async function shareWithTenant(documentId: string) {
       `https://open.feishu.cn/open-apis/drive/v2/permissions/${documentId}/public?type=docx`,
       {
         method: "PATCH",
-        body: JSON.stringify({ link_share_entity: "tenant_readable" }),
+        body: JSON.stringify({ link_share_entity: "tenant_editable" }),
       },
     );
     return null;
   } catch (error) {
     const message = error instanceof Error ? error.message : "权限设置失败";
-    return `文档已创建，组织内还不能直接打开：${message}。把应用加进共享文件夹后，填写 FEISHU_FOLDER_TOKEN 再更新一次。`;
+    return `文档已创建，但组织内还不能编辑：${message}。`;
   }
 }
 

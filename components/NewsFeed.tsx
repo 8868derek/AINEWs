@@ -41,7 +41,7 @@ export function NewsFeed({
 function FeedItem({ item, entries }: { item: NewsRow; entries: EntryLink[] }) {
   const original = safeUrl(item.link_original);
   return (
-    <article className="grid grid-cols-[3.5rem_1fr] gap-3 py-6 sm:grid-cols-[4.5rem_1fr]">
+    <article id={`news-${item.id}`} className="grid scroll-mt-8 grid-cols-[3.5rem_1fr] gap-3 py-6 sm:grid-cols-[4.5rem_1fr]">
       <time className="pt-1 text-sm text-stone-500">{clockTime(item.discovered_at)}</time>
       <div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-stone-500">

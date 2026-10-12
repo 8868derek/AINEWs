@@ -38,11 +38,18 @@ export function TeamBriefView({
                     )}
                   </h3>
                   <p className="mt-3 leading-7 text-stone-700">{item.point}</p>
-                  {href ? (
-                    <a href={href} className="mt-3 inline-block text-sm text-cinnabar">
-                      {item.source || "原文"}
-                    </a>
-                  ) : null}
+                  <div className="mt-3 flex gap-4 text-sm">
+                    {href ? (
+                      <a href={href} className="text-cinnabar">
+                        {item.source || "原文"}
+                      </a>
+                    ) : null}
+                    {item.place ? (
+                      <a href={item.place} className="text-cinnabar">
+                        平台位置
+                      </a>
+                    ) : null}
+                  </div>
                 </article>
               );
             })}

@@ -51,8 +51,15 @@ export async function publishDigestDoc(digestId: number): Promise<{ url: string 
     for (const item of section.items) {
       blocks.push(heading(5, item.title));
       blocks.push(paragraph(item.point));
-      const link = linkRun(item.source || "原文", item.url);
-      if (link) blocks.push({ block_type: 2, text: { elements: [link], style: {} } });
+      const elements: TextRun[] = [];
+      const original = linkRun(item.source || "原文", item.url);
+      const place = linkRun("平台位置", absoluteSiteUrl(item.place));
+      if (original) elements.push(original);
+      if (place) {
+        if (elements.length > 0) elements.push(textRun(" · "));
+        elements.push(place);
+      }
+      if (elements.length > 0) blocks.push({ block_type: 2, text: { elements, style: {} } });
     }
   }
   blocks.push(paragraph("材料来自 AIHOT 公开接口。简报分制造与供应链、基础模型和行业热门。链接是原文。"));
@@ -90,6 +97,12 @@ function paragraph(content: string): Block {
 
 function textRun(content: string): TextRun {
   return { text_run: { content: clip(content) } };
+}
+
+function absoluteSiteUrl(path: string | null | undefined) {
+  const base = process.env.SITE_URL?.trim().replace(/\/$/, "");
+  if (!base || !path?.startsWith("/")) return "";
+  return `${base}${path}`;
 }
 
 function linkRun(label: string, url: string | null | undefined): TextRun | null {

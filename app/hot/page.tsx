@@ -13,7 +13,7 @@ export default function HotPage() {
         {topics.map((topic) => {
           const href = safeUrl(topic.link_original);
           return (
-            <li key={topic.rank} className="flex gap-4 py-4">
+            <li id={`hot-${topic.rank}`} key={topic.rank} className="flex scroll-mt-8 gap-4 py-4">
               <span className="w-6 font-serif text-xl text-cinnabar">{topic.rank}</span>
               <div>
                 {href ? (

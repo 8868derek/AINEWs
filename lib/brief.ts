@@ -1,3 +1,4 @@
+import { FEED_CATEGORIES } from "@/lib/categories";
 import { chatJson, llmConfig } from "@/lib/llm";
 
 export type BriefItem = {
@@ -5,6 +6,7 @@ export type BriefItem = {
   point: string;
   source: string;
   url: string;
+  place?: string;
 };
 
 export type TeamBrief = {
@@ -21,6 +23,7 @@ export type SourceMaterial = {
   at?: string;
   selected?: boolean;
   hotRank?: number;
+  id?: string;
 };
 
 const GROUPS: Array<{ heading: string; weight: number; pattern: RegExp }> = [
@@ -86,6 +89,7 @@ export function mergeMaterials(...groups: SourceMaterial[][]) {
         continue;
       }
       if (!prev.summary && item.summary) prev.summary = item.summary;
+      if (!prev.id && item.id) prev.id = item.id;
       if (item.selected) prev.selected = true;
       if (item.hotRank && (!prev.hotRank || item.hotRank < prev.hotRank)) prev.hotRank = item.hotRank;
     }
@@ -163,6 +167,17 @@ export function parseBrief(raw: string | null | undefined): TeamBrief | null {
   }
 }
 
+function itemPlace(item: Scored) {
+  if (item.heading === "行业热门" && item.hotRank) return `/hot#hot-${item.hotRank}`;
+  if (item.id) {
+    const known = FEED_CATEGORIES.some((category) => category.id === item.category);
+    const hash = `news-${encodeURIComponent(item.id)}`;
+    return known ? `/library?category=${item.category}#${hash}` : `/library#${hash}`;
+  }
+  if (item.hotRank) return `/hot#hot-${item.hotRank}`;
+  return "";
+}
+
 function assemble(picks: Scored[], lead: string): TeamBrief {
   const grouped = new Map<string, BriefItem[]>();
   for (const item of picks) {
@@ -172,6 +187,7 @@ function assemble(picks: Scored[], lead: string): TeamBrief {
       point: item.summary || "原文没有摘要。",
       source: item.source,
       url: item.url,
+      place: itemPlace(item),
     });
     grouped.set(item.heading, list);
   }

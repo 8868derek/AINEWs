@@ -195,6 +195,7 @@ export async function syncCorpus(cutoff: Date) {
 export function recentMaterials(withinMs = 24 * 60 * 60 * 1000) {
   const since = new Date(Date.now() - withinMs).toISOString();
   const news = rows<{
+    id: string;
     title: string;
     summary: string | null;
     source_name: string;
@@ -203,7 +204,7 @@ export function recentMaterials(withinMs = 24 * 60 * 60 * 1000) {
     discovered_at: string;
     selected: number;
   }>(
-    `SELECT title, summary, source_name, link_original, category, discovered_at, selected
+    `SELECT id, title, summary, source_name, link_original, category, discovered_at, selected
      FROM news_items
      WHERE discovered_at >= ?
      ORDER BY discovered_at DESC
@@ -215,7 +216,7 @@ export function recentMaterials(withinMs = 24 * 60 * 60 * 1000) {
   for (const item of news) {
     const stamped = material(item.title, item.summary, item.source_name, item.link_original, item.category || "动态");
     if (!stamped) continue;
-    addMaterial(list, seen, { ...stamped, at: item.discovered_at, selected: item.selected === 1 });
+    addMaterial(list, seen, { ...stamped, id: item.id, at: item.discovered_at, selected: item.selected === 1 });
   }
   const topics = rows<{ rank: number; title: string; source_name: string | null; link_original: string | null; fetched_at: string }>(
     "SELECT rank, title, source_name, link_original, fetched_at FROM hot_topics ORDER BY rank ASC",

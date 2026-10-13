@@ -5,25 +5,14 @@
   "engines": {
     "node": ">=22.13.0"
   },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "next": "^15.5.4",
-    "node-cron": "^3.0.3",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.13",
-    "@types/node": "^22.18.6",
-    "@types/node-cron": "^3.0.11",
-    "@types/react": "^19.1.13",
-    "@types/react-dom": "^19.1.9",
-    "tailwindcss": "^4.1.13",
-    "typescript": "^5.9.2"
+    "build": "npm run build -w @ainews/shared && npm run build -w @ainews/db && npm run build -w @ainews/api && npm run build -w @ainews/web",
+    "typecheck": "npm run build -w @ainews/shared && npm run build -w @ainews/db && npm run typecheck -w @ainews/api && npm run typecheck -w @ainews/web",
+    "dev:api": "npm run dev -w @ainews/api",
+    "dev:web": "npm run dev -w @ainews/web"
   }
 }

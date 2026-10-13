@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ainews
+      POSTGRES_PASSWORD: ainews
+      POSTGRES_DB: ainews
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ainews -d ainews"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DATABASE_URL: postgres://ainews:ainews@db:5432/ainews
+      API_TOKEN: change-me
+      PORT: "4000"
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      FEISHU_APP_ID: ${FEISHU_APP_ID:-}
+      FEISHU_APP_SECRET: ${FEISHU_APP_SECRET:-}
+      FEISHU_FOLDER_TOKEN: ${FEISHU_FOLDER_TOKEN:-}
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      API_URL: http://api:4000
+      API_TOKEN: change-me
+      PORT: "3000"
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:

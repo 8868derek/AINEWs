@@ -1,4 +1,4 @@
-import type { EntryLink } from "@ainews/shared";
+import type { EntryLink } from "@/lib/shared";
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const base = process.env.API_URL?.trim().replace(/\/$/, "");

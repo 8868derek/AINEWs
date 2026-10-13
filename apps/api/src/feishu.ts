@@ -1,6 +1,6 @@
 import { parseBrief } from "./brief";
 import { getDigest } from "./queries";
-import { formatShanghai, slotLabel } from "@ainews/shared";
+import { formatShanghai, slotLabel } from "./shared";
 
 type FeishuJson = {
   code?: number;

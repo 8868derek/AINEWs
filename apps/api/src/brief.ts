@@ -1,4 +1,4 @@
-import { FEED_CATEGORIES } from "@ainews/shared";
+import { FEED_CATEGORIES } from "./shared";
 import { chatJson, llmConfig } from "./llm";
 
 export type BriefItem = {

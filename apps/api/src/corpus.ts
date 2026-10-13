@@ -10,7 +10,7 @@ import {
   storyPublicId,
   type AihotItem,
 } from "./aihot";
-import { one, rows, run } from "@ainews/db";
+import { one, rows, run } from "./db";
 import type { SourceMaterial } from "./brief";
 
 async function saveDoc(kind: string, docKey: string, title: string, payload: unknown) {

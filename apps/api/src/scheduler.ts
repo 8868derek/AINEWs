@@ -1,7 +1,7 @@
 import cron from "node-cron";
-import { one, stateGet } from "@ainews/db";
+import { one, stateGet } from "./db";
 import { runDigest } from "./digest";
-import { shanghaiLocalToDate, shanghaiParts } from "@ainews/shared";
+import { shanghaiLocalToDate, shanghaiParts } from "./shared";
 
 const globalForScheduler = globalThis as unknown as { ainewsScheduler?: boolean };
 

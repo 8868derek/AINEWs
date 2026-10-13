@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { DigestView } from "@/components/DigestView";
-import type { DigestRow, EntryLink, NewsRow } from "@ainews/shared";
+import type { DigestRow, EntryLink, NewsRow } from "@/lib/shared";
 import { asEntryMap } from "@/lib/api";
 
 export const dynamic = "force-dynamic";

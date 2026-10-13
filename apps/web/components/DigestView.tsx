@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { TeamBriefView } from "@/components/TeamBrief";
-import type { DigestRow, EntryLink, NewsRow } from "@ainews/shared";
-import { categoryLabel, formatShanghai, kindLabel, parseBrief, safeUrl, slotLabel, statusLabel } from "@ainews/shared";
+import type { DigestRow, EntryLink, NewsRow } from "@/lib/shared";
+import { categoryLabel, formatShanghai, kindLabel, parseBrief, safeUrl, slotLabel, statusLabel } from "@/lib/shared";
 
 export function DigestView({
   digest,

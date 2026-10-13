@@ -5,14 +5,9 @@
   "engines": {
     "node": ">=22.13.0"
   },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "build": "npm run build -w @ainews/shared && npm run build -w @ainews/db && npm run build -w @ainews/api && npm run build -w @ainews/web",
-    "typecheck": "npm run build -w @ainews/shared && npm run build -w @ainews/db && npm run typecheck -w @ainews/api && npm run typecheck -w @ainews/web",
-    "dev:api": "npm run dev -w @ainews/api",
-    "dev:web": "npm run dev -w @ainews/web"
+    "dev:api": "npm run dev --prefix apps/api",
+    "dev:web": "npm run dev --prefix apps/web",
+    "typecheck": "npm run typecheck --prefix apps/api && npm run typecheck --prefix apps/web"
   }
 }

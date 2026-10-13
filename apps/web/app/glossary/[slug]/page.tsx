@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { formatShanghai, kindLabel, safeUrl, statusLabel, type GlossaryEntry, type NewsRow } from "@ainews/shared";
+import { formatShanghai, kindLabel, safeUrl, statusLabel, type GlossaryEntry, type NewsRow } from "@/lib/shared";
 
 export const dynamic = "force-dynamic";
 

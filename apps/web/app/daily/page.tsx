@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import { safeUrl } from "@ainews/shared";
+import { safeUrl } from "@/lib/shared";
 
 export const dynamic = "force-dynamic";
 

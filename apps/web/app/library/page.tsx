@@ -1,6 +1,6 @@
 import { NewsFeed } from "@/components/NewsFeed";
 import { api, asEntryMap } from "@/lib/api";
-import { categoryLabel, FEED_CATEGORIES, type EntryLink, type NewsRow } from "@ainews/shared";
+import { categoryLabel, FEED_CATEGORIES, type EntryLink, type NewsRow } from "@/lib/shared";
 
 export const dynamic = "force-dynamic";
 

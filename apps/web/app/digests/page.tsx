@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { formatShanghai, safeUrl, slotLabel, type DigestRow } from "@ainews/shared";
+import { formatShanghai, safeUrl, slotLabel, type DigestRow } from "@/lib/shared";
 
 export const dynamic = "force-dynamic";
 

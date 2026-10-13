@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { api } from "@/lib/api";
-import { formatShanghai, kindLabel, statusLabel, type GlossaryEntry } from "@ainews/shared";
+import { formatShanghai, kindLabel, statusLabel, type GlossaryEntry } from "@/lib/shared";
 
 export const dynamic = "force-dynamic";
 

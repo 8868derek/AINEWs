@@ -1,10 +1,10 @@
 import { contentHash, dailyLead, fetchHotTopics, fetchLatestDaily, fetchSelectedItems, type AihotItem } from "./aihot";
 import { mergeMaterials, writeTeamBrief } from "./brief";
 import { recentMaterials, syncCorpus } from "./corpus";
-import { insertId, one, rows, run, stateSet, tryLock, unlock, withTransaction } from "@ainews/db";
+import { insertId, one, rows, run, stateSet, tryLock, unlock, withTransaction } from "./db";
 import { grantTenantEdit, publishDigestDoc } from "./feishu";
 import { buildGlossary } from "./glossary";
-import { defaultCutoff, shanghaiParts, slotFor, type Slot } from "@ainews/shared";
+import { defaultCutoff, shanghaiParts, slotFor, type Slot } from "./shared";
 
 export type DigestRow = {
   id: number;

@@ -16,8 +16,8 @@ services:
       retries: 12
   api:
     build:
-      context: .
-      dockerfile: apps/api/Dockerfile
+      context: ./apps/api
+      dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgres://ainews:ainews@db:5432/ainews
       API_TOKEN: change-me
@@ -36,8 +36,8 @@ services:
       - "4000:4000"
   web:
     build:
-      context: .
-      dockerfile: apps/web/Dockerfile
+      context: ./apps/web
+      dockerfile: Dockerfile
     environment:
       API_URL: http://api:4000
       API_TOKEN: change-me

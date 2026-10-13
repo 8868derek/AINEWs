@@ -12,22 +12,26 @@
 
 ## 结构
 
-- `apps/web`：网页。只向后端要数据，不连数据库，也不保存模型密钥。
-- `apps/api`：接口、8:00 / 14:00 定时更新、飞书文档。
-- `packages/db`：Postgres。网页和接口都不把数据库文件放在自己进程里。
+网页和后端是两个服务，数据库是第三个。Zeabur 上各建各的，根目录不要指到仓库根。
+
+- 后端：根目录填 `apps/api`
+- 网页：根目录填 `apps/web`
+- 数据库：单独加一个 Postgres
+
+Dockerfile 那个文本框不要写 `apps/api/Dockerfile`。那一行会被当成 Dockerfile 指令，所以才会出现 `unknown instruction`。根目录选对之后，文本框留空，让它用该目录里的 Dockerfile。
 
 ## 本地运行
 
-先启动 Postgres，再把 `.env.example` 写成后端用的环境变量。`API_TOKEN` 在网页和接口上必须相同。
+先启动 Postgres。后端和网页分开安装、分开启动。`API_TOKEN` 两边必须相同。
 
 ```bash
-npm install
-npm run build -w @ainews/shared && npm run build -w @ainews/db
+npm install --prefix apps/api
+npm install --prefix apps/web
 DATABASE_URL=postgres://ainews:ainews@localhost:5432/ainews API_TOKEN=change-me npm run dev:api
 API_URL=http://localhost:4000 API_TOKEN=change-me npm run dev:web
 ```
 
-也可以直接 `docker compose up --build`。打开 [http://localhost:3000](http://localhost:3000)。
+也可以在仓库根执行 `docker compose up --build`。打开 [http://localhost:3000](http://localhost:3000)。
 
 模型、飞书密钥只配在后端：
 
@@ -47,7 +51,7 @@ API_URL=http://localhost:4000 API_TOKEN=change-me npm run dev:web
 以前的 `data/app.sqlite` 可以导入新库：
 
 ```bash
-SQLITE_PATH=data/app.sqlite DATABASE_URL=postgres://ainews:ainews@localhost:5432/ainews npm run import:sqlite -w @ainews/api
+SQLITE_PATH=data/app.sqlite DATABASE_URL=postgres://ainews:ainews@localhost:5432/ainews npm run import:sqlite --prefix apps/api
 ```
 
 ## 仓库

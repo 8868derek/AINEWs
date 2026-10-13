@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import { formatShanghai, safeUrl, slotLabel, type RuntimeStatus } from "@ainews/shared";
+import { formatShanghai, safeUrl, slotLabel, type RuntimeStatus } from "@/lib/shared";
 
 export const dynamic = "force-dynamic";
 

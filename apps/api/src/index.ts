@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { closePool, migrate } from "@ainews/db";
+import { closePool, migrate } from "./db";
 import { ensureActor } from "./aihot";
 import { runDigest } from "./digest";
 import {

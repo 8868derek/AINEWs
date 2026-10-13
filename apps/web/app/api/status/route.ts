@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { RuntimeStatus } from "@ainews/shared";
+import type { RuntimeStatus } from "@/lib/shared";
 
 export const dynamic = "force-dynamic";
 

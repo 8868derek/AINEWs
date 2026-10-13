@@ -1,6 +1,6 @@
 import Link from "next/link";
-import type { EntryLink, NewsRow } from "@ainews/shared";
-import { categoryLabel, clockTime, dayHeading, kindLabel, safeUrl, shanghaiDateKey, statusLabel } from "@ainews/shared";
+import type { EntryLink, NewsRow } from "@/lib/shared";
+import { categoryLabel, clockTime, dayHeading, kindLabel, safeUrl, shanghaiDateKey, statusLabel } from "@/lib/shared";
 
 export function NewsFeed({
   title,

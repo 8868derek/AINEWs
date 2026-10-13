@@ -1,12 +1,12 @@
-import { one, rows, stateGet } from "@ainews/db";
+import { one, rows, stateGet } from "./db";
 import type { DigestRow, NewsRow } from "./digest";
 import type { GlossaryEntry } from "./glossary";
 import { llmConfig } from "./llm";
-import { nextRun } from "@ainews/shared";
+import { nextRun } from "./shared";
 
 export type EntryLink = GlossaryEntry & { context_note: string; news_id: string };
 
-import { FEED_CATEGORIES, categoryLabel } from "@ainews/shared";
+import { FEED_CATEGORIES, categoryLabel } from "./shared";
 
 export { FEED_CATEGORIES, categoryLabel };
 

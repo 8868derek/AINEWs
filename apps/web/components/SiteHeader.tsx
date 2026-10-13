@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { RunButton } from "@/components/RunButton";
-import { FEED_CATEGORIES } from "@ainews/shared";
+import { FEED_CATEGORIES } from "@/lib/shared";
 
 const contentLinks = [
   { href: "/", label: "简报", match: "home" },

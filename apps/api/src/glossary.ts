@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { insertId, one, rows, run } from "@ainews/db";
+import { insertId, one, rows, run } from "./db";
 import { chatJson, llmConfig } from "./llm";
 import { lookupWiki, type WikiPage } from "./wiki";
 

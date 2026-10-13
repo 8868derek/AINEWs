@@ -4,20 +4,19 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && mkdir -p dist/db/migrations && cp src/db/migrations/001_init.sql dist/db/migrations/001_init.sql",
     "start": "node dist/index.js",
     "import:sqlite": "tsx src/import-sqlite.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@ainews/db": "0.1.0",
-    "@ainews/shared": "0.1.0",
     "node-cron": "^3.0.3",
     "pg": "^8.16.3"
   },
   "devDependencies": {
     "@types/node": "^22.18.6",
     "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.15.5",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }

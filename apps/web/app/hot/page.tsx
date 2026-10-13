@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import { safeUrl, type HotTopicRow } from "@ainews/shared";
+import { safeUrl, type HotTopicRow } from "@/lib/shared";
 
 export const dynamic = "force-dynamic";
 

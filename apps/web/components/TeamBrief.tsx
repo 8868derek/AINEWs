@@ -1,5 +1,5 @@
-import type { TeamBrief } from "@ainews/shared";
-import { formatShanghai, safeUrl, slotLabel } from "@ainews/shared";
+import type { TeamBrief } from "@/lib/shared";
+import { formatShanghai, safeUrl, slotLabel } from "@/lib/shared";
 
 export function TeamBriefView({
   brief,

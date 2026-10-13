@@ -1,7 +1,7 @@
 import { TeamBriefView } from "@/components/TeamBrief";
 import { WaitingRefresh } from "@/components/WaitingRefresh";
 import { api } from "@/lib/api";
-import { parseBrief, type DigestRow } from "@ainews/shared";
+import { parseBrief, type DigestRow } from "@/lib/shared";
 
 export const dynamic = "force-dynamic";
 

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "crypto";
-import { stateGet, stateSet } from "@ainews/db";
+import { stateGet, stateSet } from "./db";
 
 export type AihotItem = {
   id: string;

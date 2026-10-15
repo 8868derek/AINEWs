@@ -47,6 +47,10 @@ function SidebarNav() {
         </span>
       </Link>
 
+      <div className="mt-5 px-2">
+        <RunButton />
+      </div>
+
       <Group label="内容">
         {contentLinks.map((link) => (
           <Item key={link.href} href={link.href} active={activeContent(link.match, link.href)}>
@@ -84,9 +88,6 @@ function SidebarNav() {
         </Item>
       </Group>
 
-      <div className="mt-6 px-2">
-        <RunButton />
-      </div>
       <p className="mt-auto px-3 pt-8 text-xs leading-5 text-stone-500">
         材料来自{" "}
         <a href="https://aihot.news" className="text-cinnabar">
@@ -111,6 +112,7 @@ function Item({ href, active, children }: { href: string; active: boolean; child
   return (
     <Link
       href={href}
+      prefetch={false}
       className={`flex h-9 items-center rounded-lg px-3 text-sm no-underline ${active ? "bg-white font-medium text-ink" : "text-stone-600 hover:bg-white hover:text-ink"}`}
     >
       {children}

@@ -1,14 +1,12 @@
 import { notFound } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import { formatShanghai, kindLabel, safeUrl, statusLabel, type GlossaryEntry, type NewsRow } from "@/lib/shared";
 
 export const dynamic = "force-dynamic";
 
 export default async function GlossaryEntryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const response = await fetch(`${process.env.API_URL?.replace(/\/$/, "")}/v1/glossary/${encodeURIComponent(slug)}`, {
-    headers: process.env.API_TOKEN ? { Authorization: `Bearer ${process.env.API_TOKEN}` } : {},
-    cache: "no-store",
-  });
+  const response = await apiFetch(`/v1/glossary/${encodeURIComponent(slug)}`);
   if (response.status === 404) notFound();
   if (!response.ok) throw new Error("词条没有读出来");
   const data = (await response.json()) as { entry: GlossaryEntry; news: Array<NewsRow & { context_note: string }> };
